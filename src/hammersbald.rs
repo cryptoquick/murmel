@@ -19,17 +19,17 @@
 
 use std::path::Path;
 
-use bitcoin::Network;
 use bitcoin::blockdata::block::BlockHeader;
-use bitcoin::{BlockHash, blockdata::constants::genesis_block};
+use bitcoin::Network;
+use bitcoin::{blockdata::constants::genesis_block, BlockHash};
 
-use hammersbald::{BitcoinAdaptor, HammersbaldAPI, persistent, transient};
+use hammersbald::{persistent, transient, BitcoinAdaptor, HammersbaldAPI};
 
+use crate::chaindb::ChainDB;
+use crate::chaindb::StoredHeader;
 use crate::error::Error;
 use crate::headercache::{CachedHeader, HeaderCache};
-use log::{debug, info, warn, error};
-use crate::chaindb::StoredHeader;
-use crate::chaindb::ChainDB;
+use log::{debug, error, info, warn};
 
 /// Database storing the block chain
 pub struct Hammersbald {
@@ -38,15 +38,17 @@ pub struct Hammersbald {
     network: Network,
 }
 
-
 impl Hammersbald {
-
     /// Create an in-memory database instance
     pub fn mem(network: Network) -> Result<Box<dyn ChainDB>, Error> {
         info!("working with in memory chain db");
         let db = BitcoinAdaptor::new(transient(2)?);
         let headercache = HeaderCache::new(network);
-        Ok(Box::from(Hammersbald { db, network, headercache }))
+        Ok(Box::from(Hammersbald {
+            db,
+            network,
+            headercache,
+        }))
     }
 
     /// Create or open a persistent database instance identified by the path
@@ -54,7 +56,11 @@ impl Hammersbald {
         let basename = path.to_str().unwrap().to_string();
         let db = BitcoinAdaptor::new(persistent((basename.clone()).as_str(), 100, 2)?);
         let headercache = HeaderCache::new(network);
-        Ok(Box::from(Hammersbald { db, network, headercache }))
+        Ok(Box::from(Hammersbald {
+            db,
+            network,
+            headercache,
+        }))
     }
 
     fn init_headers(&mut self) -> Result<(), Error> {
@@ -101,7 +107,6 @@ impl Hammersbald {
 }
 
 impl ChainDB for Hammersbald {
-
     /// Initialize caches
     fn init(&mut self) -> Result<(), Error> {
         self.init_headers()?;
@@ -115,7 +120,10 @@ impl ChainDB for Hammersbald {
     }
 
     /// Store a header
-    fn add_header(&mut self, header: &BlockHeader) -> Result<Option<(StoredHeader, Option<Vec<BlockHash>>, Option<Vec<BlockHash>>)>, Error> {
+    fn add_header(
+        &mut self,
+        header: &BlockHeader,
+    ) -> Result<Option<(StoredHeader, Option<Vec<BlockHash>>, Option<Vec<BlockHash>>)>, Error> {
         if let Some((cached, unwinds, forward)) = self.headercache.add_header(header)? {
             self.db.put_object_by_hash(&cached.stored)?;
             if let Some(forward) = forward.clone() {
@@ -134,12 +142,15 @@ impl ChainDB for Hammersbald {
     }
 
     /// iterate trunk [from .. tip]
-    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item=&'a CachedHeader> +'a> {
+    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a> {
         self.headercache.iter_trunk(from)
     }
 
     /// iterate trunk [genesis .. from] in reverse order from is the tip if not specified
-    fn iter_trunk_rev<'a>(&'a self, from: Option<u32>) -> Box<dyn Iterator<Item=&'a CachedHeader> +'a> {
+    fn iter_trunk_rev<'a>(
+        &'a self,
+        from: Option<u32>,
+    ) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a> {
         self.headercache.iter_trunk_rev(from)
     }
 
@@ -171,7 +182,10 @@ impl ChainDB for Hammersbald {
 
     /// Find header id with most work
     fn fetch_header_tip(&self) -> Result<Option<BlockHash>, Error> {
-        Ok(self.db.get_object_by_key::<BlockHash>(HEADER_TIP_KEY)?.map(|(_, h)| h.clone()))
+        Ok(self
+            .db
+            .get_object_by_key::<BlockHash>(HEADER_TIP_KEY)?
+            .map(|(_, h)| h.clone()))
     }
 
     /// Read header from the DB
@@ -190,9 +204,9 @@ const HEADER_TIP_KEY: &[u8] = &[0u8; 1];
 
 #[cfg(test)]
 mod test {
-    use bitcoin::Network;
-    use bitcoin::BlockHash;
     use bitcoin::blockdata::constants::genesis_block;
+    use bitcoin::BlockHash;
+    use bitcoin::Network;
 
     use crate::hammersbald::Hammersbald;
 
@@ -207,7 +221,11 @@ mod test {
 
         let header_tip = chaindb.header_tip();
         assert!(header_tip.is_some(), "failed to get header for tip");
-        assert!(header_tip.unwrap().stored.block_hash().eq(&genesis_header.block_hash()))
+        assert!(header_tip
+            .unwrap()
+            .stored
+            .block_hash()
+            .eq(&genesis_header.block_hash()))
     }
 
     #[test]
@@ -216,13 +234,20 @@ mod test {
         let genesis_header = genesis_block(network).header;
 
         let mut chaindb = Hammersbald::mem(network).unwrap();
-        let missing_tip_header_hash: BlockHash = "6cfb35868c4465b7c289d7d5641563aa973db6a929655282a7bf95c8257f53ef".parse().unwrap();
+        let missing_tip_header_hash: BlockHash =
+            "6cfb35868c4465b7c289d7d5641563aa973db6a929655282a7bf95c8257f53ef"
+                .parse()
+                .unwrap();
         chaindb.store_header_tip(&missing_tip_header_hash).unwrap();
 
         chaindb.init().unwrap();
 
         let header_tip = chaindb.header_tip();
         assert!(header_tip.is_some(), "failed to get header for tip");
-        assert!(header_tip.unwrap().stored.block_hash().eq(&genesis_header.block_hash()))
+        assert!(header_tip
+            .unwrap()
+            .stored
+            .block_hash()
+            .eq(&genesis_header.block_hash()))
     }
 }

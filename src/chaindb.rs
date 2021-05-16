@@ -29,7 +29,7 @@ use hammersbald::BitcoinObject;
 use crate::error::Error;
 use crate::headercache::CachedHeader;
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 /// Shared handle to a database storing the block chain
 /// protected by an RwLock
@@ -37,7 +37,6 @@ pub type SharedChainDB = Arc<RwLock<Box<dyn ChainDB>>>;
 
 /// Blockchain DB API for a client node.
 pub trait ChainDB: Send + Sync {
-
     /// Initialize caches.
     fn init(&mut self) -> Result<(), Error>;
 
@@ -45,16 +44,22 @@ pub trait ChainDB: Send + Sync {
     fn batch(&mut self) -> Result<(), Error>;
 
     /// Store a header.
-    fn add_header(&mut self, header: &BlockHeader) -> Result<Option<(StoredHeader, Option<Vec<BlockHash>>, Option<Vec<BlockHash>>)>, Error>;
+    fn add_header(
+        &mut self,
+        header: &BlockHeader,
+    ) -> Result<Option<(StoredHeader, Option<Vec<BlockHash>>, Option<Vec<BlockHash>>)>, Error>;
 
     /// Return position of hash on trunk if hash is on trunk.
     fn pos_on_trunk(&self, hash: &BlockHash) -> Option<u32>;
 
     /// Iterate trunk [from .. tip].
-    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item=&'a CachedHeader> + 'a>;
+    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a>;
 
     /// Iterate trunk [genesis .. from] in reverse order from is the tip if not specified.
-    fn iter_trunk_rev<'a>(&'a self, from: Option<u32>) -> Box<dyn Iterator<Item=&'a CachedHeader> + 'a>;
+    fn iter_trunk_rev<'a>(
+        &'a self,
+        from: Option<u32>,
+    ) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a>;
 
     /// Retrieve the id of the block/header with most work.
     fn header_tip(&self) -> Option<CachedHeader>;

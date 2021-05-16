@@ -56,7 +56,7 @@ pub enum Error {
     /// Handshake failure
     Handshake,
     /// lost connection
-    Lost(String)
+    Lost(String),
 }
 
 impl std::error::Error for Error {
@@ -79,7 +79,7 @@ impl std::error::Error for Error {
             Error::Hammersbald(ref err) => Some(err),
             Error::Serialize(ref err) => Some(err),
             Error::Handshake => None,
-            Error::Lost(_) => None
+            Error::Lost(_) => None,
         }
     }
 }
@@ -93,8 +93,9 @@ impl fmt::Display for Error {
             Error::NoTip => write!(f, "no chain tip found"),
             Error::UnknownUTXO => write!(f, "unknown utxo"),
             Error::NoPeers => write!(f, "no peers"),
-            Error::BadMerkleRoot =>
-                write!(f, "merkle root of header does not match transaction list"),
+            Error::BadMerkleRoot => {
+                write!(f, "merkle root of header does not match transaction list")
+            }
             Error::Handshake => write!(f, "handshake"),
             Error::Lost(ref s) => write!(f, "lost connection: {}", s),
             Error::Downstream(ref s) => write!(f, "downstream error: {}", s),
@@ -117,9 +118,7 @@ impl convert::From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
         match err {
             Error::IO(e) => e,
-            _ => {
-                io::Error::new(io::ErrorKind::Other, err.to_string())
-            }
+            _ => io::Error::new(io::ErrorKind::Other, err.to_string()),
         }
     }
 }
@@ -129,7 +128,6 @@ impl convert::From<io::Error> for Error {
         Error::IO(err)
     }
 }
-
 
 impl convert::From<util::Error> for Error {
     fn from(err: util::Error) -> Error {
@@ -159,7 +157,7 @@ impl convert::From<bip158::Error> for Error {
     fn from(err: bip158::Error) -> Self {
         match err {
             bip158::Error::Io(io) => Error::IO(io),
-            bip158::Error::UtxoMissing(_) => Error::UnknownUTXO
+            bip158::Error::UtxoMissing(_) => Error::UnknownUTXO,
         }
     }
 }

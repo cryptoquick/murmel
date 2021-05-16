@@ -28,16 +28,17 @@
 
 mod headercache;
 
-pub mod ping;
-pub mod dns;
-pub mod timeout;
-pub mod headerdownload;
-pub mod downstream;
-pub mod dispatcher;
-pub mod p2p;
-pub mod error;
 pub mod chaindb;
-#[cfg(feature = "default")] pub mod hammersbald;
 pub mod constructor;
+pub mod dispatcher;
+pub mod dns;
+pub mod downstream;
+pub mod error;
+#[cfg(feature = "default")]
+pub mod hammersbald;
+pub mod headerdownload;
+pub mod p2p;
+pub mod ping;
+pub mod timeout;
 
 pub use error::Error;
