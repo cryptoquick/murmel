@@ -34,7 +34,10 @@ serde="1"
 serde_derive="1"
 
 ## optional
-hammersbald = { version = "3.0.1", features = [ "bitcoin_support" ], optional=true }
+[dependencies.hammersbald]
+version = "3.0.1"
+features = [ "bitcoin_support" ]
+optional=true
 
 [dev-dependencies]
 rustc-serialize = "0.3"
